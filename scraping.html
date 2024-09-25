@@ -1,23 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fetch All Products</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
+
 <body>
     <h1>Fetch All Products</h1>
     <button id="fetchAll">Fetch All Products</button>
     <pre id="output"></pre>
 
     <script>
-        $(document).ready(function() {
-            $('#fetchAll').on('click', function() {
+        $(document).ready(function () {
+            $('#fetchAll').on('click', function () {
                 let allProducts = []; // Array to hold all products
-                let page = 1; // Start from the first page
+                let page = 334; // Start from the first page
                 const userId = '6249be02-cc47-4729-a4cc-550104a54f9d';
-                const sessionId = '42e30b53-8211-4d89-b9fb-b7dedbbb554e';
+                const sessionId = '1d1f7a73-e23f-4963-8874-4af9655e1635';
+
+                function downloadFile(text, fileName) {
+                    let textToDownload = text;
+
+                    // Create a Blob from the text
+                    let blob = new Blob([textToDownload], { type: 'text/plain' });
+
+                    // Create a link element
+                    let link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = fileName; // Filename for the downloaded file
+
+                    // Append to the document
+                    document.body.appendChild(link);
+
+                    // Programmatically click the link to trigger the download
+                    link.click();
+
+                    // Clean up and remove the link
+                    document.body.removeChild(link);
+                }
+
 
                 function fetchPage(page) {
                     const requestData = {
@@ -30,7 +54,7 @@
                         page: page,
                         userId: userId,
                         sessionId: sessionId,
-                        pageLoadId: '0a55fb4c-02d2-432c-9d5e-d7dc17091aa6',
+                        pageLoadId: 'f8e407c1-faff-4a4d-97c3-0f480d9356de',
                         lastViewed: ['04033-PWR-P', 'BB-201067-P', 'STN-STHT10356', 'CYW-10919', 'NF-BD12FL08020125P-P']
                     };
 
@@ -39,15 +63,30 @@
                     $.ajax({
                         url: requestUrl,
                         method: 'GET',
-                        success: function(response) {
+                        success: function (response) {
                             if (response && response.results && response.results.length > 0) {
                                 // Add the results of the current page to allProducts array
                                 allProducts = allProducts.concat(response.results);
                                 console.log(`Fetched page ${page}:`, response.results.length);
-                                
+                                // var data = { jsonData: response };
+                                // $.ajax({
+                                //     url: 'https://localhost:7192/Products/SaveJson', // Replace <port> with your actual port
+                                //     type: 'POST',
+                                //     contentType: 'application/json',
+                                //     data: JSON.stringify(data), // Convert the JSON string to JSON format
+                                //     success: function (res) {
+                                //         $('#response').html(`<p>${res.Message}</p><p>File Name: ${res.FileName}</p>`);
+                                //     },
+                                //     error: function (xhr, status, error) {
+                                //         $('#response').html(`<p>Error: ${xhr.responseText}</p>`);
+                                //     }
+                                // });
+                                downloadFile(JSON.stringify(response),`a${page}.json`);
+
+                                $('#output').text(JSON.stringify(allProducts));
                                 // Fetch the next page after a short delay
                                 setTimeout(() => {
-                                    fetchPage(page + 1); // Call fetchPage with the next page number
+                                        fetchPage(page + 1); // Call fetchPage with the next page number
                                 }, 1000); // 1 second delay between requests
                             } else {
                                 // If there are no results, we can stop fetching
@@ -55,7 +94,7 @@
                                 console.log('No more products to load or end of results reached.');
                             }
                         },
-                        error: function(xhr, status, error) {
+                        error: function (xhr, status, error) {
                             $('#output').text('Error: ' + error); // Display error message
                         }
                     });
@@ -66,4 +105,5 @@
         });
     </script>
 </body>
+
 </html>
