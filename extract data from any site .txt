@@ -1,0 +1,80 @@
+(async () => {
+    const products = [];
+
+    // Function to extract product details
+    const extractProductDetails = async (url) => {
+        const response = await fetch(url);
+        const text = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+
+        const title = doc.querySelector('h1')?.innerText || 'No Title';
+        const description = doc.querySelector('#tab-description')?.innerText || 'No Description';
+        const price = doc.querySelector('.price')?.innerText || 'No Price';
+        const imageUrl = doc.querySelector('.image img')?.src || 'No Image';
+
+        return { title, description, price, imageUrl };
+    };
+
+    // Function to extract product links from the homepage
+    const extractProductsFromHomepage = async () => {
+        const productLinks = Array.from(document.querySelectorAll('.product-thumb .caption h4 a')).map(a => a.href);
+        for (const link of productLinks) {
+            const productData = await extractProductDetails(link);
+            products.push(productData);
+            console.log('Extracted:', productData);
+        }
+    };
+
+    // Function to extract category and subcategory products
+    const extractCategories = async () => {
+        const categoryLinks = Array.from(document.querySelectorAll('.dropdown-menu a')).map(a => a.href);
+        for (const category of categoryLinks) {
+            const response = await fetch(category);
+            const text = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+
+            // Extract products from the category page
+            const productLinks = Array.from(doc.querySelectorAll('.product-thumb .caption h4 a')).map(a => a.href);
+            for (const link of productLinks) {
+                const productData = await extractProductDetails(link);
+                products.push(productData);
+                console.log('Extracted from category:', productData);
+            }
+
+            // Check for subcategories
+            const subcategoryLinks = Array.from(doc.querySelectorAll('.dropdown-inner a')).map(a => a.href);
+            for (const subcategory of subcategoryLinks) {
+                const responseSub = await fetch(subcategory);
+                const textSub = await responseSub.text();
+                const parserSub = new DOMParser();
+                const docSub = parserSub.parseFromString(textSub, 'text/html');
+
+                // Extract products from the subcategory page
+                const productLinksSub = Array.from(docSub.querySelectorAll('.product-thumb .caption h4 a')).map(a => a.href);
+                for (const link of productLinksSub) {
+                    const productData = await extractProductDetails(link);
+                    products.push(productData);
+                    console.log('Extracted from subcategory:', productData);
+                }
+            }
+        }
+    };
+
+    await extractProductsFromHomepage();
+    await extractCategories();
+
+    // Convert products array to CSV format
+    const csvContent = 'data:text/csv;charset=utf-8,' + 
+        'Title,Description,Price,Image URL\n' + 
+        products.map(p => `${p.title},"${p.description}",${p.price},${p.imageUrl}`).join('\n');
+
+    // Create a link to download the CSV
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'products.csv');
+    document.body.appendChild(link); // Required for FF
+    link.click(); // This will download the CSV file
+})();
